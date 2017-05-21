@@ -2,10 +2,16 @@
 //
 
 #include "stdafx.h"
+#include "tt.h"
 
+int test1();
+int test2();
 
 int main()
 {
-    return 0;
+	global++;
+	test1();
+	test2();
+	return 0;
 }
 
