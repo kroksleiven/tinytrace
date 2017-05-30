@@ -1,0 +1,124 @@
+*
+* OVERALL OBJECTIVE
+*
+
+Create a simple and light weight library for tracing (and debugging) C/C++ source
+code. The library shall ble flexible eoungh to be used on embedded platforms with
+a wide range of available resources (processing power, memory, etc.), with only
+minor modifications.
+
+*
+* SOFTWARE REQUIREMENTS SPECIFICATION (SRS)
+*
+
+Section 1 - General and non-functional requirements
+--------------------------------------------------------------------------------
+
+* The trace library shall have minmal impact to size and timing of the existing
+source code.
+
+* The library shall support: Win32, POSIX (Linux, VxW) and "bare metal" code.
+
+Section 2 - Tracing and logging
+--------------------------------------------------------------------------------
+
+* It shall be possible to trace all types of functions, including ISRs and other
+low-level functions where print-statements are not available, or will impact
+timing significantly.
+
+* It shall be possible to trace:
+    - Sequence of code executed (e.g. line number, address, or similar)
+    - Values of variables
+
+* Trace points shall be inserted in existing source code using simple macros.
+
+* It shall be possible to switch off tracing with one central #define (in one
+file). When tracing is turned off, the inserted trace points shall have _no
+impact_ on the source code being debugged.
+
+* If shall be possible to print all traces to the console (if available).
+
+Section 3 - Analysis
+--------------------------------------------------------------------------------
+
+* The following data sources shall be supported as input to the analysis tools:
+    - text (e.g. printout from console)
+    - binary data (e.d. miniDmp, .dmp)
+
+* The analysis tools shall show the sequence of hit trace points, and the value
+of logged variables.
+
+*
+* SOFTWARE DESIGN DESCRIPTION (SDD)
+*
+
+Section 1 - General
+--------------------------------------------------------------------------------
+All kode samlet i én, global #include som inneholder både deklarering og
+definisjon av alle typer og funksjoner.
+
+Konfigurasjon
+
+-  Basert på #defines
+o  Extras (applies to all log entries)
+  #define TIME_STAMP
+  #define FILE NAME
+  #define LINE_NUMBER
+
+  -  Parametre
+  o  TOTAL MEMORY (e.g. 100000)
+
+Section 2 - Tracing and logging
+--------------------------------------------------------------------------------
+
+  ~l  Log location (no values)
+  ~ls ("str")  Log stringo
+  ~li  Log int
+  ~lri (var)  Log and return int (the same value)
+  -  Use e.g. for arguments to function calls.
+
+Section 3 - Data model
+--------------------------------------------------------------------------------
+
+  Alle data skrives til et felles, statisk allokert (globalt) område ved oppstart.
+
+  Området nulles før logging starter.
+
+  Ringbuffer! (Skal kunne gå kontinuerlig og gi et inntrykk av hva som var siste sekvens ved e.g. en stopp)
+
+  MAGIC NUMBER (16B)
+  -  Magisk tall for å finne segmentet ved søk i dump/minnet etc.
+  -  "Abraham Lincoln" = 4162726168616d204c696e636f6c6e00
+
+  TOTAL MEMORY [4B]
+  -  Includes magic number
+
+  LOG POINTER [4B]
+  -  Location of last, valid trace valid in wrap-around buffer.
+
+  SEQUENCE DATA [xB]
+
+  Format
+
+  -  ID (= return address for function, Backtrace) [4B]
+  -  SIZE [2B]
+  -  MACRO [1B]
+  -  DATA [xB]
+
+  Example:
+
+  -  ID + SIZE + MACRO + DATA
+  -  ID + SIZE + MACRO + DATA
+  -  ID + SIZE + MACRO + DATA
+  -  ID + SIZE + MACRO + DATA
+  -  ID + SIZE + MACRO + DATA
+
+Section 4 - Analysis
+--------------------------------------------------------------------------------
+
+  Minimer kompleksiteten så mye som mulig.
+    Logge-data skal kunne leses direkte fra minnet.
+
+  Direkte fra minnet (som tekst eller verdier)
+  Kan 'pretty-printes' med funksjoner:
+

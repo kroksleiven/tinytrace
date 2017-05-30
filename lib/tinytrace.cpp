@@ -1,5 +1,5 @@
 #include "stdafx.h"
 
-#include "tt.h"
+#include "tinytrace.h"
 
 int global;

@@ -2,7 +2,7 @@
 //
 
 #include "stdafx.h"
-#include "tt.h"
+#include "..\lib\tinytrace.h"
 
 int test1();
 int test2();
@@ -10,8 +10,5 @@ int test2();
 int main()
 {
 	global++;
-	test1();
-	test2();
 	return 0;
 }
-
