@@ -3,7 +3,7 @@
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="testapp.cpp" />
-    <ClCompile Include="..\lib\tinytrace.cpp">
+    <ClCompile Include="..\lib\tinytrace.c">
       <Filter>lib</Filter>
     </ClCompile>
   </ItemGroup>

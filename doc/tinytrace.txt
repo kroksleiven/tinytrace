@@ -1,18 +1,22 @@
+* ------------------------------------------------------------------------------
 *
 * OVERALL OBJECTIVE
 *
+* ------------------------------------------------------------------------------
 
 Create a simple and light weight library for tracing (and debugging) C/C++ source
 code. The library shall ble flexible eoungh to be used on embedded platforms with
 a wide range of available resources (processing power, memory, etc.), with only
 minor modifications.
 
+* ------------------------------------------------------------------------------
 *
 * SOFTWARE REQUIREMENTS SPECIFICATION (SRS)
 *
+* ------------------------------------------------------------------------------
 
 Section 1 - General and non-functional requirements
---------------------------------------------------------------------------------
+---------------------------------------------------
 
 * The trace library shall have minmal impact to size and timing of the existing
 source code.
@@ -20,7 +24,7 @@ source code.
 * The library shall support: Win32, POSIX (Linux, VxW) and "bare metal" code.
 
 Section 2 - Tracing and logging
---------------------------------------------------------------------------------
+-------------------------------
 
 * It shall be possible to trace all types of functions, including ISRs and other
 low-level functions where print-statements are not available, or will impact
@@ -38,8 +42,8 @@ impact_ on the source code being debugged.
 
 * If shall be possible to print all traces to the console (if available).
 
-Section 3 - Analysis
---------------------------------------------------------------------------------
+Section 3 - Data analysis
+-------------------------
 
 * The following data sources shall be supported as input to the analysis tools:
     - text (e.g. printout from console)
@@ -48,77 +52,94 @@ Section 3 - Analysis
 * The analysis tools shall show the sequence of hit trace points, and the value
 of logged variables.
 
+* ------------------------------------------------------------------------------
 *
-* SOFTWARE DESIGN DESCRIPTION (SDD)
+*  SOFTWARE DESIGN DESCRIPTION (SDD)
 *
+* ------------------------------------------------------------------------------
 
 Section 1 - General
 --------------------------------------------------------------------------------
-All kode samlet i én, global #include som inneholder både deklarering og
-definisjon av alle typer og funksjoner.
 
-Konfigurasjon
+Two files (.h and .c) will include all declarations and code. The header file
+forward declares all macros, types and functions required for applicaion TLUs.
 
--  Basert på #defines
-o  Extras (applies to all log entries)
-  #define TIME_STAMP
-  #define FILE NAME
-  #define LINE_NUMBER
+Configuration is don by modification of simple #defines in tinytrace.h.
+The configuration is common for all TLUs which include the library.
 
-  -  Parametre
-  o  TOTAL MEMORY (e.g. 100000)
+Coonfiguration properties:
+
+	#define TOTAL_MEMORY_BYTES 100000
+
+	#define TIME_STAMP	1
+	#define FILE NAME	1
+	#define LINE_NUMBER	1
 
 Section 2 - Tracing and logging
---------------------------------------------------------------------------------
+-------------------------------
 
-  ~l  Log location (no values)
-  ~ls ("str")  Log stringo
-  ~li  Log int
-  ~lri (var)  Log and return int (the same value)
-  -  Use e.g. for arguments to function calls.
+Macros available for the application code (examples only):
+
+...
+
+l				Add trace to buffer (no logging)
+_l (*entry)		Decode & print
+
+ls ("str")		Trace & log string
+_ls (*entry)	Decode & print
+
+li (int)		Trace & log int
+_li (*entry)	Decode & print
+
+lri (int)		Trace & log int, and return (the same int). Used e.g. for arguments to function calls.
+_lri (*entry)	Decode & print
+
+...
 
 Section 3 - Data model
---------------------------------------------------------------------------------
+----------------------
 
-  Alle data skrives til et felles, statisk allokert (globalt) område ved oppstart.
+All traced locations and logged values are written to the same global buffer,
+allocated on startup (statically).
 
-  Området nulles før logging starter.
+During initialization the data is zeroed.
 
-  Ringbuffer! (Skal kunne gå kontinuerlig og gi et inntrykk av hva som var siste sekvens ved e.g. en stopp)
+The buffer is a ring-buffer.
 
-  MAGIC NUMBER (16B)
-  -  Magisk tall for å finne segmentet ved søk i dump/minnet etc.
-  -  "Abraham Lincoln" = 4162726168616d204c696e636f6c6e00
+Data format:
 
-  TOTAL MEMORY [4B]
-  -  Includes magic number
+	MAGIC NUMBER (16B)
+	
+	Easy identifiable number to be used when searching for the buffer contents
+	in a memory dump file or similar.
+	
+	"Abraham Lincoln" = 4162726168616d204c696e636f6c6e00
 
-  LOG POINTER [4B]
-  -  Location of last, valid trace valid in wrap-around buffer.
+	BUFFER SIZE [4B]
+	
+	Total buffer size (including magic number)
 
-  SEQUENCE DATA [xB]
+	LOG POINTER [4B]
+	
+	Location of last, valid trace valid in wrap-around buffer.
 
-  Format
+	SEQUENCE DATA [xB]
 
-  -  ID (= return address for function, Backtrace) [4B]
-  -  SIZE [2B]
-  -  MACRO [1B]
-  -  DATA [xB]
+	Entry format:
+	-  MACRO [1B]   ID of the macro which was used to code the entry data. Required for decoding.
+	-  TRACE [4B]   Return address for function (e.g.) Backtrace)
+	-  DATA [xB]    Logged values
 
-  Example:
+	Example:
+	... MACRO TRACE DATA   MACRO TRACE DATA   MACRO TRACE DATA ...
 
-  -  ID + SIZE + MACRO + DATA
-  -  ID + SIZE + MACRO + DATA
-  -  ID + SIZE + MACRO + DATA
-  -  ID + SIZE + MACRO + DATA
-  -  ID + SIZE + MACRO + DATA
+	CRC [1B]
+	
+	CRC of last entry added to buffer. Indicates if the last entry was written successfully to the buffer.
 
 Section 4 - Analysis
---------------------------------------------------------------------------------
+--------------------
 
-  Minimer kompleksiteten så mye som mulig.
-    Logge-data skal kunne leses direkte fra minnet.
-
-  Direkte fra minnet (som tekst eller verdier)
-  Kan 'pretty-printes' med funksjoner:
-
+The analysis tool shall accept the following inputs:
+	- Binary (e.g. a memory dump file)
+	- Text (e.g. copied from a console/terminal screen)
